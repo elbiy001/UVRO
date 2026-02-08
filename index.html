@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Uvro - Elite Auto Market</title>
+    
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+       (function(){
+          // !!! ЗАМЕНИ ЭТО НА СВОЙ PUBLIC KEY ИЗ EMAILJS !!!
+          emailjs.init("YOUR_PUBLIC_KEY"); 
+       })();
+    </script>
+
+    <style>
+        /* --- ТВОИ СТИЛИ (БЕЗ ИЗМЕНЕНИЙ) --- */
+        body { font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
+        .page { display: none; padding: 15px; }
+        .active { display: block; }
+        .search-container { background: white; padding: 10px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .search-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; }
+        .card { background: white; border-radius: 15px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 220px; object-fit: cover; background: #eee; }
+        .card-details { padding: 15px; }
+        .price { color: #28a745; font-size: 22px; font-weight: bold; }
+        .card-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        .like-container { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 24px; }
+        .liked { color: #e74c3c; }
+        .contact-btn { background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .btn-green { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index: 1000; }
+        .modal-box { background:white; width:90%; margin:10% auto; padding:20px; border-radius:15px; box-sizing: border-box; }
+        input, select { width:100%; padding:12px; margin: 10px 0; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size: 16px; }
+        .chat-item { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .chat-window { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: none; flex-direction: column; }
+        .chat-header { padding: 15px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; font-weight: bold; }
+        .messages { flex: 1; padding: 15px; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 14px; }
+        .msg.me { align-self: flex-end; background: #007bff; color: white; }
+        .chat-input-area { padding: 10px; background: white; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        .nav { position: fixed; bottom: 0; width: 100%; height: 65px; background: white; display: flex; border-top: 1px solid #ddd; z-index: 100; }
+        .nav-item { flex: 1; text-align: center; display: flex; flex-direction: column; justify-content: center; font-size: 10px; font-weight: bold; color: #777; }
+        .active-tab { color: #28a745; }
+
+        .profile-info-card { background: white; padding: 20px; border-radius: 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .profile-avatar { width: 60px; height: 60px; background: #8e44ad; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+        .profile-text b { font-size: 18px; color: #333; }
+        .profile-text p { margin: 2px 0 0; color: #777; font-size: 14px; }
+
+        .uvro-header { padding: 15px 15px 5px 15px; font-size: 28px; font-weight: 900; color: #28a745; letter-spacing: -1px; }
+        #uvro-auth { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; justify-content: center; align-items: center; z-index: 1000000; }
+        .uvro-card { background: white; padding: 30px 20px; border-radius: 25px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.6); }
+        .auth-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: #eee; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .tab-btn.active-auth { background: #28a745; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="uvro-auth">
+        <div class="uvro-card" id="auth-main-card">
+            <div style="font-size: 40px; font-weight: 900; color: #28a745; margin-bottom: 20px; letter-spacing: -1px;">Uvro</div>
+            
+            <div id="auth-ui-box">
+                <div class="auth-tabs">
+                    <button id="tab-reg" class="tab-btn active-auth" onclick="toggleAuthMode('reg')">Регистрация</button>
+                    <button id="tab-login" class="tab-btn" onclick="toggleAuthMode('login')">Войти</button>
+                </div>
+                <div id="auth-fields">
+                    <input type="text" id="user-nick" placeholder="Ваш ник">
+                    <input type="text" id="user-login" placeholder="Логин/Email">
+                    <input type="password" id="user-pass" placeholder="Пароль">
+                    <button id="auth-main-btn" class="btn-green" style="margin-top:10px;" onclick="processAuth()">ЗАРЕГИСТРИРОВАТЬСЯ</button>
+                    <div id="forgot-link" style="display:none; margin-top:15px; color:#007bff; cursor:pointer; font-size:13px;" onclick="showResetUI()">Забыли пароль?</div>
+                </div>
+            </div>
+
+            <div id="reset-ui-box" style="display:none;">
+                <h3 id="reset-title">Восстановление</h3>
+                <div id="reset-step-1">
+                    <p style="font-size:12px; color:#666;">Код придет на вашу почту</p>
+                    <input type="text" id="reset-email-input" placeholder="Email">
+                    <button class="btn-green" onclick="sendResetCode()">ОТПРАВИТЬ КОД</button>
+                </div>
+                <div id="reset-step-2" style="display:none;">
+                    <p style="font-size:12px; color:#666;">Введите код из письма</p>
+                    <input type="number" id="reset-code-input" placeholder="Код">
+                    <button class="btn-green" onclick="verifyResetCode()">ПОДТВЕРДИТЬ</button>
+                </div>
+                <div id="reset-step-3" style="display:none;">
+                    <input type="password" id="reset-new-pass" placeholder="Новый пароль">
+                    <button class="btn-green" onclick="finishReset()">СОХРАНИТЬ ПАРОЛЬ</button>
+                </div>
+                <p onclick="hideResetUI()" style="margin-top:15px; color:red; cursor:pointer; font-size:13px;">Назад</p>
+            </div>
+        </div>
+    </div>
+
+    <section id="feed-page" class="page active">
+        <div class="uvro-header">Uvro</div>
+        <div class="search-container"><input type="text" id="search-input" class="search-input" placeholder="🔍 Поиск..." oninput="renderAll()"></div>
+        <div id="all-cars-list"></div>
+    </section>
+
+    <section id="fav-page" class="page">
+        <h2 style="margin-left: 10px;">Избранное</h2>
+        <div id="fav-list"></div>
+    </section>
+
+    <section id="chats-page" class="page">
+        <h2 style="margin-left: 10px;">Чаты</h2>
+        <div id="chats-list"></div>
+    </section>
+
+    <section id="profile-page" class="page">
+        <div class="uvro-header" style="text-align: center;">Профиль</div>
+        <div class="profile-info-card">
+            <div class="profile-avatar" id="prof-avatar">U</div>
+            <div class="profile-text">
+                <b id="prof-nick">...</b>
+                <p id="prof-login">...</p>
+            </div>
+        </div>
+        <div style="text-align:center; padding: 10px;"><button class="btn-green" onclick="showModal(true)">+ ПРОДАТЬ МАШИНУ</button></div>
+        <h4 style="margin-left: 10px;">Мои объявления:</h4>
+        <div id="my-cars-list"></div>
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="logout()" style="color: red; background: none; border: none; font-weight: bold;">ВЫЙТИ ИЗ АККАУНТА</button>
+        </div>
+    </section>
+
+    <div id="chat-window" class="chat-window">
+        <div class="chat-header"><button onclick="closeChat()" style="border:none; background:none; font-size:24px;">←</button><span id="chat-title">Чат</span></div>
+        <div id="messages-box" class="messages"></div>
+        <div class="chat-input-area"><input type="text" id="chat-input" placeholder="Сообщение..."><button class="contact-btn" onclick="sendMessage()">ОТПРАВИТЬ</button></div>
+    </div>
+
+    <div id="add-modal" class="modal">
+        <div class="modal-box">
+            <h3>Новое объявление</h3>
+            <input type="file" id="car-file" accept="image/*">
+            <input type="text" id="car-mark" placeholder="Марка машины">
+            <input type="text" id="car-price" placeholder="Цена ($)">
+            <button class="btn-green" onclick="handlePublish()">ВЫСТАВИТЬ</button>
+            <button onclick="showModal(false)" style="width:100%; border:none; background:none; color:red; margin-top:10px;">Отмена</button>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <div class="nav-item active-tab" onclick="switchTab('feed-page', this)">ЛЕНТА</div>
+        <div class="nav-item" onclick="switchTab('fav-page', this)">ИЗБРАННОЕ</div>
+        <div class="nav-item" onclick="switchTab('chats-page', this)">ЧАТЫ</div>
+        <div class="nav-item" onclick="switchTab('profile-page', this)">ПРОФИЛЬ</div>
+    </nav>
+
+    <script>
+        // --- ЛОГИКА ВОССТАНОВЛЕНИЯ ---
+        let generatedCode = null;
+
+        function showResetUI() {
+            document.getElementById('auth-ui-box').style.display = 'none';
+            document.getElementById('reset-ui-box').style.display = 'block';
+        }
+        function hideResetUI() {
+            document.getElementById('auth-ui-box').style.display = 'block';
+            document.getElementById('reset-ui-box').style.display = 'none';
+        }
+
+        function sendResetCode() {
+            const email = document.getElementById('reset-email-input').value;
+            let savedUser = JSON.parse(localStorage.getItem('uvro_account'));
+            
+            if (!savedUser || email !== savedUser.login) {
+                alert("Аккаунт не найден!"); return;
+            }
+            
+            generatedCode = Math.floor(1000 + Math.random() * 9000);
+            
+            const params = { to_email: email, user_name: savedUser.nick, message: generatedCode };
+
+            // !!! ВСТАВЬ СВОИ ID СЮДА !!!
+            emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', params)
+                .then(function() {
+                    alert("Код отправлен на почту!");
+                    document.getElementById('reset-step-1').style.display = 'none';
+                    document.getElementById('reset-step-2').style.display = 'block';
+                }, function(error) {
+                    alert("Ошибка почтового сервера. Проверьте ключи в коде!");
+                });
+        }
+
+        function verifyResetCode() {
+            if (document.getElementById('reset-code-input').value == generatedCode) {
+                document.getElementById('reset-step-2').style.display = 'none';
+                document.getElementById('reset-step-3').style.display = 'block';
+            } else { alert("Неверный код!"); }
+        }
+
+        function finishReset() {
+            const newPass = document.getElementById('reset-new-pass').value;
+            let savedUser = JSON.parse(localStorage.getItem('uvro_account'));
+            savedUser.pass = newPass;
+            localStorage.setItem('uvro_account', JSON.stringify(savedUser));
+            alert("Пароль изменен!");
+            hideResetUI(); toggleAuthMode('login');
+        }
+
+        // --- ОСТАЛЬНАЯ ЛОГИКА (БЕЗ ИЗМЕНЕНИЙ) ---
+        let authMode = 'reg'; 
+        function toggleAuthMode(mode) {
+            authMode = mode;
+            document.getElementById('tab-reg').className = (mode === 'reg') ? 'tab-btn active-auth' : 'tab-btn';
+            document.getElementById('tab-login').className = (mode === 'login') ? 'tab-btn active-auth' : 'tab-btn';
+            document.getElementById('user-nick').style.display = (mode === 'login') ? 'none' : 'block';
+            document.getElementById('forgot-link').style.display = (mode === 'login') ? 'block' : 'none';
+            document.getElementById('auth-main-btn').innerText = (mode === 'login') ? 'ВОЙТИ' : 'ЗАРЕГИСТРИРОВАТЬСЯ';
+        }
+
+        function processAuth() {
+            const nick = document.getElementById('user-nick').value;
+            const login = document.getElementById('user-login').value;
+            const pass = document.getElementById('user-pass').value;
+            let savedUser = JSON.parse(localStorage.getItem('uvro_account'));
+            if (authMode === 'reg') {
+                const newUser = { nick, login, pass };
+                localStorage.setItem('uvro_account', JSON.stringify(newUser));
+                localStorage.setItem('uvro_logged', 'true');
+                location.reload();
+            } else {
+                if (savedUser && login === savedUser.login && pass === savedUser.pass) {
+                    localStorage.setItem('uvro_logged', 'true');
+                    location.reload();
+                } else { alert("Ошибка!"); }
+            }
+        }
+
+        function updateProfileUI(user) {
+            document.getElementById('prof-nick').innerText = user.nick;
+            document.getElementById('prof-login').innerText = user.login;
+            document.getElementById('prof-avatar').innerText = user.nick.charAt(0).toUpperCase();
+        }
+
+        function logout() { localStorage.removeItem('uvro_logged'); location.reload(); }
+
+        let cars = JSON.parse(localStorage.getItem('cars_final_v15')) || [];
+        let messages = JSON.parse(localStorage.getItem('chats_v15')) || {};
+        let activeChatId = null;
+        let tempImg = "";
+
+        window.onload = function() {
+            let user = JSON.parse(localStorage.getItem('uvro_account'));
+            if (localStorage.getItem('uvro_logged') === 'true' && user) {
+                document.getElementById('uvro-auth').remove();
+                updateProfileUI(user);
+            }
+            renderAll();
+        };
+
+        document.getElementById('car-file').onchange = function(e) {
+            let reader = new FileReader();
+            reader.onload = function(ev) {
+                let img = new Image();
+                img.onload = function() {
+                    let canvas = document.createElement('canvas');
+                    let maxW = 400; let scale = maxW / img.width;
+                    canvas.width = maxW; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    tempImg = canvas.toDataURL('image/jpeg', 0.5);
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        };
+
+        function switchTab(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-tab'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active-tab');
+            if(id === 'chats-page') renderChatsList();
+            if(id === 'fav-page') renderFavs();
+        }
+        function showModal(v) { document.getElementById('add-modal').style.display = v ? 'block' : 'none'; }
+        function handlePublish() {
+            const m = document.getElementById('car-mark').value || "Без названия";
+            const p = document.getElementById('car-price').value || "0";
+            cars.unshift({ id: Date.now(), mark: m, price: p, img: tempImg, isLiked: false });
+            localStorage.setItem('cars_final_v15', JSON.stringify(cars));
+            showModal(false); renderAll();
+        }
+        function openChat(id, name) { activeChatId = id; document.getElementById('chat-title').innerText = name; document.getElementById('chat-window').style.display = 'flex'; renderMessages(); }
+        function closeChat() { document.getElementById('chat-window').style.display = 'none'; activeChatId = null; }
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            if(!messages[activeChatId]) messages[activeChatId] = [];
+            messages[activeChatId].push({ text: input.value, from: 'me' });
+            localStorage.setItem('chats_v15', JSON.stringify(messages));
+            input.value = ""; renderMessages();
+        }
+        function renderMessages() {
+            const box = document.getElementById('messages-box'); box.innerHTML = "";
+            (messages[activeChatId] || []).forEach(m => { box.innerHTML += `<div class="msg ${m.from}">${m.text}</div>`; });
+            box.scrollTop = box.scrollHeight;
+        }
+        function renderChatsList() {
+            const list = document.getElementById('chats-list'); list.innerHTML = "";
+            Object.keys(messages).forEach(id => {
+                const car = cars.find(c => c.id == id);
+                if(car) list.innerHTML += `<div class="chat-item" onclick="openChat(${car.id}, '${car.mark}')"><img src="${car.img}" style="width:50px; height:50px; border-radius:8px; object-fit:cover;"><div style="flex:1"><b>${car.mark}</b><br><small>${messages[id][messages[id].length-1].text}</small></div></div>`;
+            });
+        }
+        function toggleLike(id) {
+            cars = cars.map(c => { if(c.id === id) c.isLiked = !c.isLiked; return c; });
+            localStorage.setItem('cars_final_v15', JSON.stringify(cars)); renderAll();
+        }
+        function deleteCar(id) { if(confirm("Удалить?")) { cars = cars.filter(c => c.id !== id); localStorage.setItem('cars_final_v15', JSON.stringify(cars)); renderAll(); } }
+        function renderAll() {
+            const feed = document.getElementById('all-cars-list');
+            const my = document.getElementById('my-cars-list');
+            feed.innerHTML = ""; my.innerHTML = "";
+            cars.forEach(c => {
+                feed.innerHTML += `<div class="card"><img src="${c.img}"><div class="card-details"><div class="price">$ ${c.price}</div><b>${c.mark}</b><div class="card-actions"><span class="like-container ${c.isLiked ? 'liked' : ''}" onclick="toggleLike(${c.id})">${c.isLiked ? '❤️' : '🤍'}</span><button class="contact-btn" onclick="openChat(${c.id}, '${c.mark}')">Написать</button></div></div></div>`;
+                my.innerHTML += `<div style="background:white; padding:15px; margin-bottom:10px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;"><b>${c.mark}</b><span style="color:red; font-weight:bold;" onclick="deleteCar(${c.id})">Удалить</span></div>`;
+            });
+        }
+        function renderFavs() {
+            const list = document.getElementById('fav-list'); list.innerHTML = "";
+            cars.filter(c => c.isLiked).forEach(c => {
+                list.innerHTML += `<div class="card"><img src="${c.img}"><div class="card-details"><b>${c.mark}</b><br><span class="price">$ ${c.price}</span><button class="contact-btn" style="width:100%; margin-top:10px;" onclick="openChat(${c.id}, '${c.mark}')">Написать</button></div></div>`;
+            });
+        }
+    </script>
+</body>
+</html>
